@@ -12,12 +12,18 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.ensemble import RandomForestClassifier
-
+import scipy.stats
 
 # ___________________________________________________________________________
 # Loading dataset
+data = pd.read_csv('heart.csv', low_memory=False)
 
-raw_df = pd.read_csv('heart.csv', low_memory=False)
+# copy of data
+raw_df = data.copy()
+
+# Defining input data and the target values
+X = raw_df.drop(columns=[raw_df.columns[-1]])
+y = raw_df[raw_df.columns[-1]]
 
 
 # ___________________________________________________________________________
@@ -42,11 +48,11 @@ top_corr = corrmat.index
 plt.figure(figsize=(12,8))
 heatmap = sns.heatmap(raw_df[top_corr].corr(),annot=True,cmap="coolwarm")
 
-# Scatterplot 
+# 3D Scatterplot
 # For features age, sex and cp (chestpain type), colored by output.
-# Sex = 0 indicates female, 
+# Sex = 0 indicates female,
 # Sex = 1 indicates male.
-# Cp have values 0, 1, 2 or 3. 0 being typical angina, 3 being no symptoms. 
+# Cp have values 0, 1, 2 or 3. 0 being typical angina, 3 being no symptoms.
 # Output = 0 means lesser chance of heartattack, colored blue.
 # Output = 1 means higher chance for heart attack, colored red.
 
@@ -55,7 +61,7 @@ ax = fig.add_subplot(111, projection='3d')
 x = raw_df['sex']
 y = raw_df['age']
 z = raw_df['cp']
-c = raw_df['output']  
+c = raw_df['output']
 
 # Defining colors of the dots
 colors = np.where(c == 0, 'blue', 'red')
@@ -65,26 +71,21 @@ ax.scatter(x, y, z, c=colors)
 ax.set_xlabel('Sex')
 ax.set_ylabel('Age')
 ax.set_zlabel('CP')
-
 plt.show()
 
-# PCA of scaled data to explore data and further reduce dimensionality
 
-# Standardizing raw data
-raw_df =(raw_df - raw_df.mean()) / raw_df.std()
-# dropping last column (target values)
-df_norm = raw_df.drop(raw_df.columns[-1], axis=1)
 
-# Copy of dataframe for later use
-copy = df_norm.copy()
+# PCA of scaled data to explore data:
+# Standardizing the raw data
+X =(X - X.mean()) / X.std()
 
 # Performing PCA and fitting on data
 pca = PCA(n_components=13)
-pca.fit(df_norm)
+pca.fit(X)
 
 loadings = pd.DataFrame(pca.components_.T,
-columns=['PC%s' % _ for _ in range(len(df_norm.columns))],
-index=df_norm.columns)
+columns=['PC%s' % _ for _ in range(len(X.columns))],
+index=X.columns)
 
 # Plot of prinipal components and explained variance
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
@@ -117,33 +118,15 @@ plt.show()
 
 # ___________________________________________________________________________
 # Data Preprocessing
-# Splitting the data with PCA(n=13) into training and test sets:
-X = df_norm.drop(columns=[df_norm.columns[-1]])  
-y = df_norm[df_norm.columns[-1]] 
 
-# Splitting the data into training and testing sets (70% train, 30% test)
+# Splitting the data into training and testing sets (70% train, 30% test):
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-
-# Copy of the dataset to further compare final results when we have done pca n=13 vs. pca n=3.
-# Performing PCA with n=3 components
-pca2 = PCA(n_components=3)
-pca2.fit(copy)
-
-# Splitting the data with PCA(n=3) into training and test sets:
-X2 = copy.drop(columns=[copy.columns[-1]])  
-y2 = copy[copy.columns[-1]] 
-
-# Splitting the data into training and testing sets (70% train, 30% test)
-X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y2, test_size=0.3, random_state=42)
-
 
 # Now, X_train and y_train can be used to train the model
 # X_test and y_test will be used for evaluating the model
 
 #Additionally, ‘random_state=42’ is used to ensure reproducibility of the results,
 #that is, 42 is an arbitrary number ensuring that the split is the same every time the split is performed.
-
 
 
 # ___________________________________________________________________________
