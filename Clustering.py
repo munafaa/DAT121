@@ -57,12 +57,12 @@ pca3 = X_pca[:,2]
 #plt.scatter(pca1, pca2, c=t)
 #plt.show()
 
-#fig = plt.figure()
-#ax = fig.add_subplot(111, projection='3d')
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
 
-#sc = ax.scatter(pca1, pca2, pca3, c=t, cmap='viridis', marker='o')
+sc = ax.scatter(pca1, pca2, pca3, c=t, cmap='viridis', marker='o')
 
-#plt.show()
+plt.show()
 
 
 #splitting test and train
