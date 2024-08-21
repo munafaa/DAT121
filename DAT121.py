@@ -159,6 +159,7 @@ forest.fit(X_train_pca, y_train)
 # Prediction
 y_pred_RF = forest.predict(X_test_pca)
 
+
 # Metrics:
 # Number of misclassified samples
 print('Misclassified samples: {0}'.format((y_test != y_pred_RF).sum()))
