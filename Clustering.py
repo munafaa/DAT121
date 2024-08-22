@@ -80,11 +80,11 @@ def log_regression(X_train, X_test,t_train, t_test):
 
     y_pred = model.predict(X_test)
 
-    #accuracy = accuracy_score(y_test, y_pred)
-    #print(f"Accuracy: {accuracy:.2f}")
-    #conf_matrix = confusion_matrix(y_test, y_pred)
-    #print("Confusion Matrix:")
-    #print(conf_matrix)
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f"Accuracy: {accuracy:.2f}")
+    conf_matrix = confusion_matrix(y_test, y_pred)
+    print("Confusion Matrix:")
+    print(conf_matrix)
 
     return y_pred 
 
