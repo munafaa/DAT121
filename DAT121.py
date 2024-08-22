@@ -1,6 +1,4 @@
-
-
-# ___________________________________________________________________________
+#%%  ___________________________________________________________________________
 # Imports
 
 import pandas as pd
@@ -14,7 +12,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from sklearn.ensemble import RandomForestClassifier
 import scipy.stats
 
-# ___________________________________________________________________________
+#%% ___________________________________________________________________________
 # Loading dataset
 data = pd.read_csv('heart.csv', low_memory=False)
 
@@ -27,7 +25,7 @@ y = raw_df[raw_df.columns[-1]]
 
 
 # ___________________________________________________________________________
-# Raw data exploration
+#%% Raw data exploration
 
 # Descriptive statistics
 descr_stats= raw_df.describe()
@@ -75,7 +73,7 @@ plt.show()
 
 
 
-# PCA of scaled data to explore data:
+#%% PCA of scaled data to explore data:
 # Standardizing the raw data
 X =(X - X.mean()) / X.std()
 
@@ -117,7 +115,12 @@ plt.show()
 
 
 # ___________________________________________________________________________
-# Data Preprocessing
+#%% Data Preprocessing
+
+# Feature selection with permutation
+
+
+
 
 # Splitting the data into training and testing sets (70% train, 30% test):
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
@@ -128,13 +131,49 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 #Additionally, ‘random_state=42’ is used to ensure reproducibility of the results,
 #that is, 42 is an arbitrary number ensuring that the split is the same every time the split is performed.
 
-
 # ___________________________________________________________________________
-# Modeling
+#%% Modeling
+from sklearn.model_selection import GridSearchCV
+
+# PCA with n=3:
+pca2 = PCA(n_components=3)
+
+# Apply PCA to the training and test data
+X_train_pca = pca2.fit_transform(X_train)
+X_test_pca = pca2.transform(X_test)
+
+#%% Random Forest
+forest = RandomForestClassifier()
+
+# Optimise the number of trees using GridSearchCV
+rf_params = {
+    'n_estimators': [100,200, 500, 700] # The number of trees in the Random Forest
+}
+
+gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5)
+gs_random.fit(X_train_pca, y_train)
+
+print('Random Forest parameters:')
+print(gs_random.best_params_)
+print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
+
+# Fitting with the best parameters:
+forest = RandomForestClassifier(**gs_random.best_params_, random_state=1)
+forest.fit(X_train_pca, y_train)
+
+# Prediction
+y_pred_RF = forest.predict(X_test_pca)
 
 
+# Metrics:
+# Number of misclassified samples
+print('Misclassified samples: {0}'.format((y_test != y_pred_RF).sum()))
 
+# Print the accuracy computed from predictions on the training set
+print('Training data accuracy: {0:.2f}'.format(forest.score(X_train_pca, y_train)))
 
+# Print the accuracy computed from predictions on the test set
+print('Test data accuracy: {0:.2f}'.format(forest.score(X_test_pca, y_test)))
 
-
-# ___________________________________________________________________________
+# Without PCA: Training 1.00, test 0.81.
+# With PCA: Training 1.00, test 0.8
