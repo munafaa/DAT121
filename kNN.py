@@ -10,26 +10,41 @@ from sklearn.tree import plot_tree
 from matplotlib.colors import ListedColormap
 
 
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+
+
 
 
 #importing the data
 _, _, X, t = data_import()
 
+
+
 #Splitting it into test train
 #Ok note here!!! test_size is a hyperparameter, try diffirent values!!!
-X_train, X_test, t_train, t_test = train_test_split(X, t, test_size=0.4, random_state=42)
+
 
 #kNN
-knn = KNeighborsClassifier(n_neighbors=2, p=2, metric='minkowski')
-knn.fit(X_train, t_train)
-t_pred = knn.predict(X_test)
+def kNN(X, t, k):
+    X_train, X_test, t_train, t_test = train_test_split(X, t, test_size=0.5, random_state=42)
+    knn = KNeighborsClassifier(n_neighbors=k, p=2, metric='minkowski')
+    knn.fit(X_train, t_train)
+    t_pred = knn.predict(X_test)
 
+    accuracy_test = knn.score(X_test, t_test)
+    accuracy_train = knn.score(X_train, t_train)
+
+    return t_pred, accuracy_test, accuracy_train
+
+
+t_pred, acc_test, acc_train = kNN(X,t, 4)
 
 #Results
 print("Performing kNN classification on regular data...")
-print('Test data accuracy: {0:.2f}'.format(knn.score(X_test, t_test)))
-print('Test data accuracy: {0:.2f}'.format(knn.score(X_train, t_train)))
-
+print('Test data accuracy: {0:.2f}'.format(acc_test))
+print('Train data accuracy: {0:.2f}'.format(acc_train))
 
 
 
@@ -43,9 +58,9 @@ for i in range(13):
     pca.fit(X)
 
     X_pca = pca.transform(X)
-    X_train, X_test, t_train, t_test = train_test_split(X_pca, t, test_size=0.4, random_state=42)
+    X_train, X_test, t_train, t_test = train_test_split(X_pca, t, test_size=0.5, random_state=42)
 
-    knn = KNeighborsClassifier(n_neighbors=5, p=2, metric='minkowski')
+    knn = KNeighborsClassifier(n_neighbors=6, p=2, metric='minkowski')
     knn.fit(X_train, t_train)
     t_pred = knn.predict(X_test)
 
@@ -67,4 +82,33 @@ plt.xlabel("Number of principal components")
 plt.ylabel("Accuracy")
 plt.show()
 
-#Now we need to check for varying number of neighbours
+
+"""
+Now we need to check for different values of n_neighbours. I will be just using original data withou performing PCA on it. 
+"""
+
+
+n_neighbours = list()
+accs_test = list()
+accs_train = list()
+for i in range(20):
+    _, acc_test, acc_train = kNN(X, t, i+1)
+    n_neighbours.append(i+1)
+    accs_test.append(acc_test)
+    accs_train.append(acc_train)
+
+plt.plot(n_neighbours, accs_test, "o-", label="Test set")
+plt.plot(n_neighbours, accs_train, "o-", label="Train set")
+plt.grid(1)
+plt.legend()
+plt.xlabel("Number of neighbours")
+plt.ylabel("Accuracy")
+plt.show()
+
+
+
+
+
+
+
+
