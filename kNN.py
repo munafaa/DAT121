@@ -1,31 +1,44 @@
-from data import data_import
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt 
-
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.tree import plot_tree
 from matplotlib.colors import ListedColormap
-
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-
 import seaborn as sns
+import pandas as pd
 
 
 
 
 
-#importing the data
+
+def data_import():
+    data = pd.read_csv("heart.csv")
+    t = data.iloc[:,-1] #last column of data, targets
+
+    X_pre = data.drop(data.columns[-1], axis=1) #remove target column from the data
+
+    #Center the data
+    mean = np.mean(X_pre, axis=0)
+    X_c = X_pre - mean
+
+    #normalize the data
+    min_X = X_c.min()
+    max_X = X_c.max()
+    X = (X_c - min_X) / (max_X - min_X)
+
+    X_numpy = X.to_numpy()
+    t_numpy = t.to_numpy()
+
+    return X, t, X_numpy, t_numpy
+
 _, _, X, t = data_import()
 
 
-
-#Splitting it into test train
-#Ok note here!!! test_size is a hyperparameter, try diffirent values!!!
 
 
 #kNN
@@ -41,20 +54,18 @@ def kNN(X, t, k):
     return t_pred, accuracy_test, accuracy_train
 
 
-t_pred, acc_test, acc_train = kNN(X,t, 12)
 
-#Results
-print("Performing kNN classification on regular data...")
-print('Test data accuracy: {0:.2f}'.format(acc_test))
-print('Train data accuracy: {0:.2f}'.format(acc_train))
+"""
+Using principal components from PCA to kNN
+"""
 
-
-
-#Including PCA 
-
+#Creating empty lists to store values for plotting
 accuracies_test = list()
 accuracies_train = list()
 n_components = list()
+
+#Create a for loop that that transforms X to principal components, splits the data 
+#and performs kNN 13 times with different number of principal components
 for i in range(13):
     pca = PCA(n_components=i+1)
     pca.fit(X)
@@ -130,8 +141,9 @@ plt.show()
 
 
 
-
-
+"""
+Also include a grid search for test set size and k-values
+"""
 def grid_search_kNN(X, t, test_sizes, k_values):
     accuracy_results = np.zeros((len(test_sizes), len(k_values)))
 
