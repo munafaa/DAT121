@@ -1,6 +1,5 @@
 
 # Imports
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -72,8 +71,6 @@ heatmap = sns.heatmap(raw_df[top_corr].corr(),annot=True,cmap="coolwarm")
 #ax.set_zlabel('CP')
 #plt.show()
 
-
-
 #%% PCA of scaled data to explore data:
 # Standardizing the raw data
 X =(X-X.mean()) / X.std()
@@ -130,15 +127,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # ___________________________________________________________________________
 #%% Modeling
 
-# PCA with n=3:
-#pca2 = PCA(n_components=3)
+# Random Forest
+from sklearn.metrics import confusion_matrix
 
-# Apply PCA to the training and test data
-#X_train_pca = pca2.fit_transform(X_train)
-#X_test_pca = pca2.transform(X_test)
-
-#%% Random Forest
-# Initialize Random Forest Classifier
 forest = RandomForestClassifier(random_state=42)
 
 # Grid search parameters including regularization options
@@ -150,11 +141,12 @@ rf_params = {
     'max_features': ['sqrt', 'log2']       # Number of features to consider at each split
 }
 
+
 # GridSearchCV to find the best hyperparameters
 #gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
 #gs_random.fit(X_train, y_train)
 
-# Print the best parameters and score
+# Printing the best parameters and score
 #print('Best Random Forest parameters:', gs_random.best_params_)
 #print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
 
@@ -172,6 +164,7 @@ test_accuracy = forest2.score(X_test, y_test)
 print(f'Training data accuracy: {train_accuracy:.2f}')
 print(f'Test data accuracy: {test_accuracy:.2f}')
 
+
 # Without PCA: Training 1.00, test 0.81.
 # With PCA: Training 1.00, test 0.8
 
@@ -179,6 +172,20 @@ print(f'Test data accuracy: {test_accuracy:.2f}')
 # After removing features, changing test size to 0.2 and and including more parameters in grid search
 # Training: 0.90
 # Test: 0.87
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred_RF)
+
+# Plottng
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False,
+            xticklabels=['Predicted 0', 'Predicted 1'],
+            yticklabels=['Actual 0', 'Actual 1'])
+
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
 
 
 # %% Permutation Feature Importance
