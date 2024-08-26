@@ -13,6 +13,8 @@ from matplotlib.colors import ListedColormap
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
+import seaborn as sns
+
 
 
 
@@ -29,7 +31,7 @@ _, _, X, t = data_import()
 #kNN
 def kNN(X, t, k):
     X_train, X_test, t_train, t_test = train_test_split(X, t, test_size=0.5, random_state=42)
-    knn = KNeighborsClassifier(n_neighbors=k, p=2, metric='minkowski')
+    knn = KNeighborsClassifier(n_neighbors=k, p=1, metric='minkowski')
     knn.fit(X_train, t_train)
     t_pred = knn.predict(X_test)
 
@@ -39,7 +41,7 @@ def kNN(X, t, k):
     return t_pred, accuracy_test, accuracy_train
 
 
-t_pred, acc_test, acc_train = kNN(X,t, 4)
+t_pred, acc_test, acc_train = kNN(X,t, 12)
 
 #Results
 print("Performing kNN classification on regular data...")
@@ -60,7 +62,7 @@ for i in range(13):
     X_pca = pca.transform(X)
     X_train, X_test, t_train, t_test = train_test_split(X_pca, t, test_size=0.5, random_state=42)
 
-    knn = KNeighborsClassifier(n_neighbors=6, p=2, metric='minkowski')
+    knn = KNeighborsClassifier(n_neighbors=3, p=2, metric='minkowski')
     knn.fit(X_train, t_train)
     t_pred = knn.predict(X_test)
 
@@ -76,6 +78,17 @@ for i in range(13):
 #Plotting
 plt.plot(n_components, accuracies_test, "o-", label="Test set")
 plt.plot(n_components, accuracies_train, "o-", label="Train set")
+
+max_acc_test_idx = accuracies_test.index(max(accuracies_test))
+max_acc_train_idx = accuracies_train.index(max(accuracies_train))
+
+
+plt.plot(n_components[max_acc_test_idx], accuracies_test[max_acc_test_idx], 'o', markersize=10, 
+         markeredgecolor='black', markerfacecolor='red', label=f"Max Test Accuracy: {max(accuracies_test):.2f}")
+plt.plot(n_components[max_acc_train_idx], accuracies_train[max_acc_train_idx], 'o', markersize=10, 
+         markeredgecolor='black', markerfacecolor='blue', label=f"Max Train Accuracy: {max(accuracies_train):.2f}")
+
+
 plt.grid(1)
 plt.legend()
 plt.xlabel("Number of principal components")
@@ -97,6 +110,12 @@ for i in range(20):
     accs_test.append(acc_test)
     accs_train.append(acc_train)
 
+
+max_acc_test_idx = accs_test.index(max(accs_test))
+print(n_neighbours[max_acc_test_idx])
+plt.plot(n_components[max_acc_test_idx], accs_test[max_acc_test_idx], 'ro', markersize=10, 
+         markeredgecolor='black', markerfacecolor='red', label=f"Max Test Accuracy: {max(accs_test):.2f}")
+
 plt.plot(n_neighbours, accs_test, "o-", label="Test set")
 plt.plot(n_neighbours, accs_train, "o-", label="Train set")
 plt.grid(1)
@@ -111,4 +130,43 @@ plt.show()
 
 
 
+
+
+def grid_search_kNN(X, t, test_sizes, k_values):
+    accuracy_results = np.zeros((len(test_sizes), len(k_values)))
+
+    for i, test_size in enumerate(test_sizes):
+        for j, k in enumerate(k_values):
+            X_train, X_test, t_train, t_test = train_test_split(X, t, test_size=test_size, random_state=42)
+            knn = KNeighborsClassifier(n_neighbors=k, p=1, metric='minkowski')
+            knn.fit(X_train, t_train)
+            accuracy = knn.score(X_test, t_test)
+            accuracy_results[i, j] = accuracy
+
+    # Plotting the heatmap
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(accuracy_results, annot=True, fmt=".2f", xticklabels=k_values, yticklabels=test_sizes, cmap='viridis')
+    plt.xlabel('Number of Neighbors (k)')
+    plt.ylabel('Test Dataset Size')
+    plt.title('Grid Search: Test Dataset Size vs k-Value')
+    plt.show()
+
+    # Identifying the best hyperparameter combination
+    max_accuracy_idx = np.unravel_index(np.argmax(accuracy_results), accuracy_results.shape)
+    best_test_size = test_sizes[max_accuracy_idx[0]]
+    best_k = k_values[max_accuracy_idx[1]]
+    best_accuracy = accuracy_results[max_accuracy_idx]
+
+    print(f"Best Accuracy: {best_accuracy:.2f}")
+    print(f"Best Test Size: {best_test_size}")
+    print(f"Best k-Value: {best_k}")
+
+    return best_test_size, best_k, best_accuracy
+
+# Define the ranges for grid search
+test_sizes = np.arange(0.1, 0.6, 0.05)  # Test sizes from 10% to 50% of the dataset
+k_values = np.arange(1, 21)  # k-values from 1 to 20
+
+# Perform the grid search
+best_test_size, best_k, best_accuracy = grid_search_kNN(X, t, test_sizes, k_values)
 
