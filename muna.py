@@ -143,14 +143,14 @@ rf_params = {
 
 
 # GridSearchCV to find the best hyperparameters
-#gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
-#gs_random.fit(X_train, y_train)
+gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
+gs_random.fit(X_train, y_train)
 
 # Printing the best parameters and score
-#print('Best Random Forest parameters:', gs_random.best_params_)
-#print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
+print('Best Random Forest parameters:', gs_random.best_params_)
+print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
 
-# Fit the Random Forest model with the best parameters
+# Fitting the Random Forest model with the best parameters
 forest2 = RandomForestClassifier(max_depth=10, max_features='sqrt', min_samples_leaf=4, min_samples_split=2, n_estimators=100, random_state=42)
 forest2.fit(X_train, y_train)
 
