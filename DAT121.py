@@ -200,11 +200,11 @@ forest2.fit(X_train_pca, y_train)
 y_pred_RF = forest2.predict(X_test_pca)
 
 # Evaluate the performance of model
-train_accuracy = forest2.score(X_train_pca, y_train)
-test_accuracy = forest2.score(X_test_pca, y_test)
+forest_train_accuracy = forest2.score(X_train_pca, y_train)
+forest_test_accuracy = forest2.score(X_test_pca, y_test)
 
-print(f'Training data accuracy: {train_accuracy:.2f}')
-print(f'Test data accuracy: {test_accuracy:.2f}')
+print(f'Training data accuracy: {forest_train_accuracy:.2f}')
+print(f'Test data accuracy: {forest_test_accuracy:.2f}')
 
 # Confusion matrix
 cm = confusion_matrix(y_test, y_pred_RF)
@@ -299,7 +299,7 @@ best_model = grid_search.best_estimator_
 y_pred = best_model.predict(X_test_pca)
 
 # Calculate accuracy
-accuracy = accuracy_score(y_test, y_pred)
+svm_accuracy = accuracy_score(y_test, y_pred)
 print(f'Accuracy on Test Set: {accuracy:.4f}')
 
 # Print the classification report and confusion matrix
@@ -394,10 +394,10 @@ knn = KNeighborsClassifier(n_neighbors=35, p=1, metric='minkowski')
 knn.fit(X_train_pca, y_train)
 t_pred = knn.predict(X_test_pca)
 
-accuracy_test = knn.score(X_test_pca, y_test)
-accuracy_train = knn.score(X_train_pca, y_train)
-print(f"Accuracy score for Test-set: {accuracy_test}")
-print(f"Accuracy score for Train-set: {accuracy_train}")
+knn_accuracy_test = knn.score(X_test_pca, y_test)
+knn_accuracy_train = knn.score(X_train_pca, y_train)
+print(f"Accuracy score for Test-set: {knn_accuracy_test}")
+print(f"Accuracy score for Train-set: {knn_accuracy_train}")
 
 
 #%%
@@ -412,7 +412,7 @@ for i in range(50):
     knn = KNeighborsClassifier(n_neighbors=i + 1, p=1, metric='minkowski')
     knn.fit(X_train_pca, y_train)
     t_pred_pca = knn.predict(X_test_pca)
-    accuracy_test_pca = knn.score(X_train_pca, y_test)
+    accuracy_test_pca = knn.score(X_test_pca, y_test)
     accuracy_train_pca = knn.score(X_train_pca, y_train)
 
     knn.fit(X_train, y_train)
@@ -466,12 +466,12 @@ plt.show()
 
 #%% Final optimized kNN model
 
-knn = KNeighborsClassifier(n_neighbors=35, p=1, metric='minkowski')
-knn.fit(X_train_pca, y_train)
-t_pred = knn.predict(X_test_pca)
+knn2 = KNeighborsClassifier(n_neighbors=35, p=1, metric='minkowski')
+knn2.fit(X_train_pca, y_train)
+t_pred = knn2.predict(X_test_pca)
 
-accuracy_test = knn.score(X_test_pca, y_test)
-accuracy_train = knn.score(X_train_pca, y_train)
+accuracy_test = knn2.score(X_test_pca, y_test)
+accuracy_train = knn2.score(X_train_pca, y_train)
 
 print(f"Accuracy score for Test-set: {np.round(accuracy_test, 3)}")
 print(f"Accuracy score for Train-set: {np.round(accuracy_train,3)}")
@@ -497,16 +497,24 @@ plt.show()
 
 #%% Comparison
 
+# The modell names and corresponding accuracy values
+model_names = ["K-Nearest Neighbors", "Logistic Regression", "Random Forest", "SVM (RBF Kernel)"]
+accuracies = [knn_accuracy_test, accuracy_elastic, forest_test_accuracy, svm_accuracy]
 
+performance_df = pd.DataFrame({
+    "Model": model_names,
+    "Test Accuracy": accuracies
+})
 
+# Printing table showing accuracy scores
+print(performance_df)
 
-
-
-
-
-
-
-
-
-
-
+# Plotting the accuracies of the models
+plt.figure(figsize=(10, 6))
+plt.barh(model_names, accuracies, color=['navy', 'mediumblue', 'royalblue', 'cornflowerblue'])
+plt.xlabel('Test Accuracy')
+plt.title('Model Comparison Based on Test Accuracy')
+plt.xlim(0, 1)  # Assuming accuracy is between 0 and 1
+plt.grid(False)
+plt.tight_layout()
+plt.show()
