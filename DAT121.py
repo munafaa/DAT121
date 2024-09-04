@@ -274,7 +274,6 @@ pipeline = Pipeline([
     ('svm', SVC(probability=True))  # SVM
 ])
 
-
 # Expanding the parameter grid for more comprehensive tuning
 paramGrid = {
     'pca__n_components': [5, 10, 13],  # Testing different numbers of PCA components
