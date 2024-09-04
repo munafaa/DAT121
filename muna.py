@@ -29,10 +29,10 @@ y = raw_df[raw_df.columns[-1]]
 
 # Descriptive statistics
 descr_stats= raw_df.describe()
-print(descr_stats)
+#print(descr_stats)
 
 # Searching for missing values
-print("Missing values in dataset:\n", raw_df.isnull().sum())
+#print("Missing values in dataset:\n", raw_df.isnull().sum())
 # no missing values in the dataset.
 
 # Histogram for features in the dataset
@@ -44,8 +44,30 @@ plt.show()
 corrmat = raw_df.corr()
 top_corr = corrmat.index
 plt.figure(figsize=(12,8))
-heatmap = sns.heatmap(raw_df[top_corr].corr(),annot=True,cmap="coolwarm")
+heatmap = sns.heatmap(raw_df[top_corr].corr(), annot=True, cmap="coolwarm")
 
+
+# plot of distrubution of genders and the output in dataset
+def plot_gender_vs_output(data):
+    fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+
+    sns.histplot(data=data, x="sex", hue="output", multiple="stack", ax=ax[0], palette="coolwarm", kde=False)
+    ax[0].set_title("Gender distribution vs. Output")
+    ax[0].set_xlabel("Gender (0: Female, 1: Male)")
+    ax[0].set_ylabel("Count")
+
+    sns.histplot(data=data, x="age", hue="output", multiple="stack", ax=ax[1], palette="coolwarm", kde=False)
+    ax[1].set_title("Age distribution vs. Output")
+    ax[1].set_xlabel("Age")
+    ax[1].set_ylabel("Count")
+
+    plt.tight_layout()
+    plt.show()
+
+plot_gender_vs_output(raw_df)
+
+
+#%%
 # 3D Scatterplot
 # For features age, sex and cp (chestpain type), colored by output.
 # Sex = 0 indicates female,
@@ -54,24 +76,25 @@ heatmap = sns.heatmap(raw_df[top_corr].corr(),annot=True,cmap="coolwarm")
 # Output = 0 means lesser chance of heartattack, colored blue.
 # Output = 1 means higher chance for heart attack, colored red.
 
-#fig = plt.figure(figsize=(12, 8))
-#ax = fig.add_subplot(111, projection='3d')
-#x = raw_df['sex']
-#y = raw_df['age']
-#z = raw_df['cp']
-#c = raw_df['output']
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
+x = raw_df['sex']
+y = raw_df['age']
+z = raw_df['cp']
+c = raw_df['output']
 
 # Defining colors of the dots
-#colors = np.where(c == 0, 'blue', 'red')
+colors = np.where(c == 0, 'blue', 'red')
 
 # Scatter plot with color based on 'output'
-#ax.scatter(x, y, z, c=colors)
-#ax.set_xlabel('Sex')
-#ax.set_ylabel('Age')
-#ax.set_zlabel('CP')
-#plt.show()
+ax.scatter(x, y, z, c=colors)
+ax.set_xlabel('Sex')
+ax.set_ylabel('Age')
+ax.set_zlabel('CP')
+plt.show()
 
 #%% PCA of scaled data to explore data:
+
 # Standardizing the raw data
 X =(X-X.mean()) / X.std()
 
@@ -111,28 +134,42 @@ ax3.set_title('Cumulative plot for explained variance')
 plt.tight_layout()
 plt.show()
 
+# Plot of pca components against feature importance
+def plot_pca_components(pca, X):
+    explained_variance = pca.explained_variance_ratio_
+    components = pca.components_
+
+    # Plotting the first three principal components:
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    for i in range(3):
+        ax = axes[i]
+        ax.barh(X.columns, components[i], color='cornflowerblue')
+        ax.set_title(f'Principal Component {i+1}\nVariance Explained: {explained_variance[i]:.2f}')
+        ax.set_xlabel('Feature Importance')
+
+    plt.tight_layout()
+    plt.show()
+
+plot_pca_components(pca,X)
 
 # ___________________________________________________________________________
 #%% Data Preprocessing
 
-# Removing the least important features found by permuation (down below)
-columns_to_remove = ['trtbps', 'thalachh', 'exng', 'chol']
-# Removing the columns from the DataFrame X
-X = X.drop(columns=columns_to_remove)
-
-
-# Splitting the data into training and testing sets (70% train, 30% test):
+# Splitting the data into training and testing sets (80% train, 20% test):
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # ___________________________________________________________________________
 #%% Modeling
 
-# Random Forest
-from sklearn.metrics import confusion_matrix
+# PCA to pre-process the data
+pca = PCA(n_components=6)
+X_train_pca = pca.fit_transform(X_train)
+X_test_pca = pca.transform(X_test)
 
+# Random Forest
 forest = RandomForestClassifier(random_state=42)
 
-# Grid search parameters including regularization options
+# Grid search for finding the best parameteres
 rf_params = {
     'n_estimators': [100, 300, 700],  # Number of trees
     'max_depth': [10, 20, 30],             # Maximum depth of each tree
@@ -141,42 +178,30 @@ rf_params = {
     'max_features': ['sqrt', 'log2']       # Number of features to consider at each split
 }
 
-
-# GridSearchCV to find the best hyperparameters
 gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
 gs_random.fit(X_train, y_train)
 
-# Printing the best parameters and score
+# Printinging the best parameters and score
 print('Best Random Forest parameters:', gs_random.best_params_)
 print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
 
 # Fitting the Random Forest model with the best parameters
-forest2 = RandomForestClassifier(max_depth=10, max_features='sqrt', min_samples_leaf=4, min_samples_split=2, n_estimators=100, random_state=42)
-forest2.fit(X_train, y_train)
+forest2 = RandomForestClassifier(max_depth=20, max_features='sqrt', min_samples_leaf=4, min_samples_split=2, n_estimators=100, random_state=42)
+forest2.fit(X_train_pca, y_train)
 
 # Prediction
-y_pred_RF = forest2.predict(X_test)
+y_pred_RF = forest2.predict(X_test_pca)
 
-# Evaluate performance
-train_accuracy = forest2.score(X_train, y_train)
-test_accuracy = forest2.score(X_test, y_test)
+# Evaluate the performance of model
+train_accuracy = forest2.score(X_train_pca, y_train)
+test_accuracy = forest2.score(X_test_pca, y_test)
 
 print(f'Training data accuracy: {train_accuracy:.2f}')
 print(f'Test data accuracy: {test_accuracy:.2f}')
 
-
-# Without PCA: Training 1.00, test 0.81.
-# With PCA: Training 1.00, test 0.8
-
-
-# After removing features, changing test size to 0.2 and and including more parameters in grid search
-# Training: 0.90
-# Test: 0.87
-
 # Confusion matrix
 cm = confusion_matrix(y_test, y_pred_RF)
 
-# Plottng
 plt.figure(figsize=(8, 6))
 sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False,
             xticklabels=['Predicted 0', 'Predicted 1'],
@@ -186,16 +211,3 @@ plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title('Confusion Matrix')
 plt.show()
-
-
-# %% Permutation Feature Importance
-# Calculate the permutation importance based on the raw features
-perm_importance = permutation_importance(forest, X_test, y_test, n_repeats=30, random_state=42)
-
-# Assuming your original feature names are stored in X.columns
-feature_names = X.columns if hasattr(X, 'columns') else [f'Feature {i+1}' for i in range(X.shape[1])]
-
-# Print the permutation importance scores
-print("\nPermutation Feature Importances:")
-for feature, importance in zip(feature_names, perm_importance.importances_mean):
-    print(f'{feature}: {importance:.4f}')
