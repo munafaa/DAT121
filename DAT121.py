@@ -17,6 +17,8 @@ from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
+import numpy as np
+from scipy.special import expit
 
 #%% ___________________________________________________________________________
 # Loading dataset
@@ -307,6 +309,7 @@ print(classification_report(y_test, y_pred))
 
 
 #%% Logistic Regression
+
 # Initialize and train the Logistic Regression model
 log_reg = LogisticRegression()
 log_reg.fit(X_train_pca, y_train)
@@ -318,63 +321,61 @@ print(f"Accuracy: {accuracy1:.2f}")
 
 
 #%% Tuning Logistic regression model
+# Defining sigmoid function
+def logistic_loss(X, y, beta, lambda_reg):
+    # Logistic loss with L2 regularization
+    predictions = expit(X @ beta)
+    loss = -np.mean(y * np.log(predictions + 1e-15) + (1 - y) * np.log(1 - predictions + 1e-15))
+    regularization = (lambda_reg / 2) * np.sum(beta[1:] ** 2)  # Regularize only non-intercept terms
+    return loss + regularization
 
-def sigmoid(z):
-    return 1 / (1 + np.exp(-z))
+def compute_gradients(X, y, beta, lambda_reg):
+    # Compute gradients of the logistic loss
+    predictions = expit(X @ beta)
+    errors = predictions - y
+    gradient = X.T @ errors / len(y)
+    gradient[1:] += lambda_reg * beta[1:]  # Add gradient of regularization term
+    return gradient
 
-def gradient(X, y, beta, lambda_):
-    m = X.shape[0]
-    predictions = sigmoid(X @ beta)
-    error = predictions - y
-    grad = (X.T @ error) / m + lambda_ * beta
-    return grad
-
-
-def hessian(X, beta, lambda_):
-    m = X.shape[0]
-    predictions = sigmoid(X @ beta)
-    diag_elements = predictions * (1 - predictions)
-    H = (X.T @ (diag_elements[:, np.newaxis] * X)) / m + lambda_ * np.eye(X.shape[1])
+def compute_hessian(X, y, beta, lambda_reg):
+    # Compute the Hessian of the logistic loss
+    predictions = expit(X @ beta)
+    diag = predictions * (1 - predictions)
+    H = X.T @ (diag[:, np.newaxis] * X) / len(y)
+    H[1:, 1:] += lambda_reg * np.eye(H.shape[0] - 1)  # Add Hessian of regularization term
     return H
 
-
-def newton_raphson(X, y, beta_initial, lambda_, tol=1e-6, max_iter=100):
-    beta = beta_initial
+def newton_raphson(X, y, lambda_reg, max_iter=100, tol=1e-6):
+    beta = np.zeros(X.shape[1])  # Initialize beta
     for _ in range(max_iter):
-        grad = gradient(X, y, beta, lambda_)
-        H = hessian(X, beta, lambda_)
-        delta_beta = np.linalg.solve(H, grad)
-        beta -= delta_beta
-
-        if np.linalg.norm(delta_beta) < tol:
+        gradient = compute_gradients(X, y, beta, lambda_reg)
+        H = compute_hessian(X, y, beta, lambda_reg)
+        delta = np.linalg.solve(H, gradient)
+        beta -= delta
+        if np.linalg.norm(delta) < tol:
             break
-
     return beta
 
+# Prepare data for optimization
+X_train_pca_with_intercept = np.hstack([np.ones((X_train_pca.shape[0], 1)), X_train_pca])
+X_test_pca_with_intercept = np.hstack([np.ones((X_test_pca.shape[0], 1)), X_test_pca])
 
-# Initialize beta coefficients
-initial_beta = np.zeros(X.shape[1])
+lambda_reg = 1.0
 
-# Apply Newton-Raphson method
-lambda_ = 1  # Regularization parameter
-optimized_beta = newton_raphson(X, y, initial_beta, lambda_)
+# Perform Newton-Raphson optimization
+beta_optimized = newton_raphson(X_train_pca_with_intercept, y_train, lambda_reg)
 
-
-# Predict using optimized beta
+# Predict using the optimized beta
 def predict(X, beta):
-    return sigmoid(X @ beta) >= 0.5
+    # Adding intercept term for prediction
+    X_with_intercept = np.hstack([np.ones((X.shape[0], 1)), X])
+    return expit(X_with_intercept @ beta) >= 0.5
 
+# Evaluate the model
+y_pred_newton = predict(X_test_pca, beta_optimized)
+accuracy_newton = accuracy_score(y_test, y_pred_newton)
+print(f"Newton-Raphson Optimization Accuracy: {accuracy_newton:.2f}")
 
-# Predict on test set
-y_pred_optimized = predict(X_test_pca, optimized_beta)
-
-# Calculate accuracy
-accuracy_optimized = accuracy_score(y_test, y_pred_optimized)
-print(f"Accuracy with Newton-Raphson optimization: {accuracy_optimized:.2f}")
-
-# Print optimized beta coefficients
-print("Optimized Beta Coefficients:")
-print(optimized_beta)
 
 #%% Logistic Regression with Elastic Net regularization
 
