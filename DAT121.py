@@ -138,6 +138,7 @@ ax3.set_title('Cumulative plot for explained variance')
 plt.tight_layout()
 plt.show()
 
+#%%
 # Plot of pca components against feature importance
 def plot_pca_components(pca, X):
     explained_variance = pca.explained_variance_ratio_
