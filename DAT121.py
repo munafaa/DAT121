@@ -7,14 +7,16 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import classification_report, confusion_matrix, precision_score, recall_score, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
-import scipy.stats
 from sklearn.linear_model import LogisticRegression
 
 #%% ___________________________________________________________________________
@@ -159,7 +161,7 @@ plot_pca_components(pca,X)
 #%% Data Preprocessing
 
 # Splitting the data into training and testing sets (80% train, 20% test):
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 n_components = 6
 # PCA to pre-process the data
@@ -249,7 +251,7 @@ print(confusion_matrix(y_test, y_pred))
 
 #%%
 # Tuning SVM model
-# Defining the pipeline with StandardScaler, PCA, and SVM
+# Defining basic pipeline with StandardScaler, PCA, and SVM to perform grid search
 pipeline = Pipeline([
     ('scaler', StandardScaler()),  # Standardization
     ('pca', PCA(n_components=6)),  # PCA with the selected number of components
@@ -266,16 +268,17 @@ print(f'Cross-Validation Scores: {cv_scores}')
 print(f'Mean Cross-Validation Accuracy: {cv_scores.mean():.4f}')
 print(f'Standard Deviation of Cross-Validation Accuracy: {cv_scores.std():.4f}')
 
+
+
 # Define the pipeline with StandardScaler, PCA, and SVM
 pipeline = Pipeline([
-    ('scaler', StandardScaler()),  # Standardization
-    ('pca', PCA()),  # PCA without specifying n_components to include in the search
+    ('scaler', StandardScaler()),   # Standardization
+    ('pca', PCA(n_components=6)),
     ('svm', SVC(probability=True))  # SVM
 ])
 
 # Expanding the parameter grid for more comprehensive tuning
 paramGrid = {
-    'pca__n_components': [5, 10, 13],  # Testing different numbers of PCA components
     'svm__C': [0.1, 1, 10, 100, 1000],  # Regularization parameter
     'svm__gamma': ['scale', 'auto', 0.1, 0.01, 0.001, 0.0001],  # Kernel coefficient
     'svm__kernel': ['rbf', 'poly', 'sigmoid']  # Different kernel types
@@ -293,7 +296,7 @@ print(f'Best Cross-Validation Accuracy: {grid_search.best_score_:.4f}')
 
 # Evaluate the best model on the test set
 best_model = grid_search.best_estimator_
-y_pred = best_model.predict(X_test)
+y_pred = best_model.predict(X_test_pca)
 
 # Calculate accuracy
 accuracy = accuracy_score(y_test, y_pred)
@@ -387,16 +390,109 @@ print(f"Accuracy with Elastic Net: {accuracy_elastic:.2f}")
 
 #%% kNN
 
+knn = KNeighborsClassifier(n_neighbors=35, p=1, metric='minkowski')
+knn.fit(X_train_pca, y_train)
+t_pred = knn.predict(X_test_pca)
+
+accuracy_test = knn.score(X_test_pca, y_test)
+accuracy_train = knn.score(X_train_pca, y_train)
+print(f"Accuracy score for Test-set: {accuracy_test}")
+print(f"Accuracy score for Train-set: {accuracy_train}")
 
 
+#%%
+# Finding the most optimal parameteres for number of neighbours
+accuracies_test_pca = list()
+accuracies_train_pca = list()
+accuracies_test = list()
+accuracies_train = list()
+
+k = list()
+for i in range(50):
+    knn = KNeighborsClassifier(n_neighbors=i + 1, p=1, metric='minkowski')
+    knn.fit(X_train_pca, y_train)
+    t_pred_pca = knn.predict(X_test_pca)
+    accuracy_test_pca = knn.score(X_train_pca, y_test)
+    accuracy_train_pca = knn.score(X_train_pca, y_train)
+
+    knn.fit(X_train, y_train)
+    t_pred = knn.predict(X_test)
+    accuracy_test = knn.score(X_test, y_test)
+    accuracy_train = knn.score(X_train, y_train)
+
+    accuracies_test_pca.append(accuracy_test_pca)
+    accuracies_train_pca.append(accuracy_train_pca)
+    accuracies_test.append(accuracy_test)
+    accuracies_train.append(accuracy_train)
+    k.append(i + 1)
+
+plt.figure(figsize=(13, 5))
+plt.plot(k, accuracies_test_pca, "-", label="Test-set, after PCA")
+plt.plot(k, accuracies_train_pca, "-", label="Train-set, after PCA")
+plt.plot(k, accuracies_test, "-", label="Test-set, without PCA")
+plt.plot(k, accuracies_train, "-", label="Train-set, without PCA")
+plt.ylabel("Accuracies")
+plt.xlabel("k")
+plt.legend()
+plt.grid(1)
+
+print(
+    f"Highest accuracy of Test-set without PCA: {max(accuracies_test)}, with k value of: {k[accuracies_test.index(max(accuracies_test))]}")
+print(
+    f"Highest accuracy of Test-set with PCA: {max(accuracies_test_pca)}, with k value of :{k[accuracies_test_pca.index(max(accuracies_test_pca))]}")
 
 
+#%% Tuning kNN for the most optimal scores possible
+
+test_sizes = np.arange(0.1, 0.6, 0.05)
+k_values = np.arange(1, 40, 1)
+
+# Plotting possible accuracy results
+accuracy_results = np.zeros([len(test_sizes), len(k_values)])
+for i, test_size in enumerate(test_sizes):
+    for j, k in enumerate(k_values):
+        X_train, X_test, t_train, t_test = train_test_split(X, y, test_size=test_size, random_state=42)
+        knn = KNeighborsClassifier(n_neighbors=k, p=1, metric='minkowski')
+        knn.fit(X_train, t_train)
+        accuracy = np.round(knn.score(X_test, t_test), 3)
+        accuracy_results[i, j] = accuracy
+
+plt.figure(figsize=(20,5))
+sns.heatmap(accuracy_results, annot=True, fmt=".2f", xticklabels=k_values, yticklabels=np.round(test_sizes,2), cmap='viridis', annot_kws={"size":8})
+plt.xlabel('Number of Neighbors (k)')
+plt.ylabel('Test Dataset Size')
+plt.title('Grid Search: Test Dataset Size vs k-Value')
+plt.show()
+
+#%% Final optimized kNN model
+
+knn = KNeighborsClassifier(n_neighbors=35, p=1, metric='minkowski')
+knn.fit(X_train_pca, y_train)
+t_pred = knn.predict(X_test_pca)
+
+accuracy_test = knn.score(X_test_pca, y_test)
+accuracy_train = knn.score(X_train_pca, y_train)
+
+print(f"Accuracy score for Test-set: {np.round(accuracy_test, 3)}")
+print(f"Accuracy score for Train-set: {np.round(accuracy_train,3)}")
+
+precision = precision_score(y_test, t_pred, average='weighted')
+recall = recall_score(y_test, t_pred, average='weighted')
+f1 = f1_score(y_test, y_pred, average='weighted')
+
+print(f"Precision: {np.round(precision,3)}")
+print(f"Recall: {np.round(recall,3)}")
+print(f"F1 Score: {np.round(f1,3)}")
+print("Classification Report:\n", classification_report(y_test, t_pred))
 
 
-
-
-
-
+conf_matrix = confusion_matrix(y_test, t_pred)
+plt.figure(figsize=(8,6))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=set(y_test), yticklabels=set(y_test))
+plt.title('Confusion Matrix')
+plt.ylabel('Actual Label')
+plt.xlabel('Predicted Label')
+plt.show()
 
 
 #%% Comparison
