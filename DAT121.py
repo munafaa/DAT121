@@ -28,7 +28,6 @@ raw_df = data.copy()
 X = raw_df.drop(columns=[raw_df.columns[-1]])
 y = raw_df[raw_df.columns[-1]]
 
-
 # ___________________________________________________________________________
 #%% Raw data exploration
 
