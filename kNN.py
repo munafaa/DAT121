@@ -141,9 +141,8 @@ plt.show()
 
 
 
-"""
-Also include a grid search for test set size and k-values
-"""
+
+
 def grid_search_kNN(X, t, test_sizes, k_values):
     accuracy_results = np.zeros((len(test_sizes), len(k_values)))
 
@@ -157,7 +156,11 @@ def grid_search_kNN(X, t, test_sizes, k_values):
 
     # Plotting the heatmap
     plt.figure(figsize=(10, 8))
-    sns.heatmap(accuracy_results, annot=True, fmt=".2f", xticklabels=k_values, yticklabels=test_sizes, cmap='viridis')
+    
+    # Adjust the number of decimals in the y-axis labels
+    y_labels = [f"{size:.2f}" for size in test_sizes]
+    
+    sns.heatmap(accuracy_results, annot=True, fmt=".2f", xticklabels=k_values, yticklabels=y_labels, cmap='viridis', annot_kws={"size": 12})
     plt.xlabel('Number of Neighbors (k)')
     plt.ylabel('Test Dataset Size')
     plt.title('Grid Search: Test Dataset Size vs k-Value')
@@ -182,3 +185,34 @@ k_values = np.arange(1, 21)  # k-values from 1 to 20
 # Perform the grid search
 best_test_size, best_k, best_accuracy = grid_search_kNN(X, t, test_sizes, k_values)
 
+
+
+# Generate the confusion matrix using the best parameters from grid search
+def generate_confusion_matrix(X, t, best_test_size, best_k):
+    # Split the data using the optimal test size
+    X_train, X_test, t_train, t_test = train_test_split(X, t, test_size=best_test_size, random_state=42)
+    
+    # Initialize and train the kNN model with the optimal k value
+    knn = KNeighborsClassifier(n_neighbors=best_k, p=1, metric='minkowski')
+    knn.fit(X_train, t_train)
+    
+    # Predict the target values on the test set
+    t_pred = knn.predict(X_test)
+    
+    # Generate the confusion matrix
+    cm = confusion_matrix(t_test, t_pred)
+    
+    # Plot the confusion matrix
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=False, annot_kws={"size": 16})
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title('Confusion Matrix')
+    plt.show()
+
+    # Print the classification report
+    print("Classification Report:")
+    print(classification_report(t_test, t_pred))
+
+# Call the function with the best parameters
+generate_confusion_matrix(X, t, best_test_size, best_k)
