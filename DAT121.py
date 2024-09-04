@@ -324,6 +324,7 @@ def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
 
+
 def gradient(X, y, beta, lambda_):
     m = X.shape[0]
     predictions = sigmoid(X @ beta)
