@@ -6,12 +6,17 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_auc_score
+from sklearn.svm import SVC
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
 import scipy.stats
+from sklearn.linear_model import LogisticRegression
 
 #%% ___________________________________________________________________________
 # Loading dataset
@@ -157,15 +162,16 @@ plot_pca_components(pca,X)
 # Splitting the data into training and testing sets (80% train, 20% test):
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# ___________________________________________________________________________
-#%% Modeling
-
+n_components = 6
 # PCA to pre-process the data
-pca = PCA(n_components=6)
+pca = PCA(n_components=n_components)
 X_train_pca = pca.fit_transform(X_train)
 X_test_pca = pca.transform(X_test)
 
-#%%
+# ___________________________________________________________________________
+#%% Modeling
+
+
 # Random Forest
 forest = RandomForestClassifier(random_state=42)
 
@@ -212,17 +218,91 @@ plt.title('Confusion Matrix')
 plt.show()
 
 
-
 #%% SVM
 
+# Creating a dataframe with selected PCs for the training data
+pcaDF_train = pd.DataFrame(data=X_train_pca, columns=[f'PC{i+1}' for i in range(n_components)])
+
+# Creating a dataframe with selected PCs for the test data
+pcaDF_test = pd.DataFrame(data=X_test_pca, columns=[f'PC{i+1}' for i in range(n_components)])
+
+#Initialize the SVM model with an RBF kernelon PCA transformed trainign data (you can choose other kernels like linear and poly but given data nature here we are using RBF)
+svmModel = SVC(kernel='rbf', probability=True, random_state=42)
+svmModel.fit(pcaDF_train, y_train)
+
+#Evaluation after training has been done
+# Make predictions on the test set
+y_pred = svmModel.predict(pcaDF_test)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Accuracy: {accuracy:.4f}')
+
+# Print the classification report
+print('Classification Report:')
+print(classification_report(y_test, y_pred))
+
+# Print the confusion matrix
+print('Confusion Matrix:')
+print(confusion_matrix(y_test, y_pred))
 
 
+#%%
+# Tuning SVM model
+# Defining the pipeline with StandardScaler, PCA, and SVM
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),  # Standardization
+    ('pca', PCA(n_components=6)),  # PCA with the selected number of components
+    ('svm', SVC(kernel='rbf', probability=True, random_state=42))  # SVM
+])
+
+# Performing 5-fold cross-validation on the entire dataset
+cv_scores = cross_val_score(pipeline, X, y, cv=5, scoring='accuracy')
+
+# Output the individual fold scores
+print(f'Cross-Validation Scores: {cv_scores}')
+
+# Output the mean accuracy and standard deviation
+print(f'Mean Cross-Validation Accuracy: {cv_scores.mean():.4f}')
+print(f'Standard Deviation of Cross-Validation Accuracy: {cv_scores.std():.4f}')
+
+# Define the pipeline with StandardScaler, PCA, and SVM
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),  # Standardization
+    ('pca', PCA()),  # PCA without specifying n_components to include in the search
+    ('svm', SVC(probability=True))  # SVM
+])
 
 
+# Expanding the parameter grid for more comprehensive tuning
+paramGrid = {
+    'pca__n_components': [5, 10, 13],  # Testing different numbers of PCA components
+    'svm__C': [0.1, 1, 10, 100, 1000],  # Regularization parameter
+    'svm__gamma': ['scale', 'auto', 0.1, 0.01, 0.001, 0.0001],  # Kernel coefficient
+    'svm__kernel': ['rbf', 'poly', 'sigmoid']  # Different kernel types
+}
 
+# Set up GridSearchCV
+grid_search = GridSearchCV(estimator=pipeline, param_grid=paramGrid, cv=5, scoring='accuracy', verbose=2, n_jobs=-1)
 
+# Fit the GridSearch to the data
+grid_search.fit(X_train, y_train)
 
+# Print the best parameters and the best accuracy score
+print(f'Best Parameters: {grid_search.best_params_}')
+print(f'Best Cross-Validation Accuracy: {grid_search.best_score_:.4f}')
 
+# Evaluate the best model on the test set
+best_model = grid_search.best_estimator_
+y_pred = best_model.predict(X_test)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Accuracy on Test Set: {accuracy:.4f}')
+
+# Print the classification report and confusion matrix
+print('Classification Report:')
+print(classification_report(y_test, y_pred))
 
 
 
