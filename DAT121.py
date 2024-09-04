@@ -184,7 +184,7 @@ rf_params = {
 }
 
 gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
-gs_random.fit(X_train, y_train)
+gs_random.fit(X_train_pca, y_train)
 
 # Printing the best parameters and score
 #print('Best Random Forest parameters:', gs_random.best_params_)
@@ -285,7 +285,7 @@ paramGrid = {
 grid_search = GridSearchCV(estimator=pipeline, param_grid=paramGrid, cv=5, scoring='accuracy', verbose=2, n_jobs=-1)
 
 # Fit the GridSearch to the data
-grid_search.fit(X_train, y_train)
+grid_search.fit(X_train_pca, y_train)
 
 # Print the best parameters and the best accuracy score
 print(f'Best Parameters: {grid_search.best_params_}')
@@ -302,7 +302,6 @@ print(f'Accuracy on Test Set: {accuracy:.4f}')
 # Print the classification report and confusion matrix
 print('Classification Report:')
 print(classification_report(y_test, y_pred))
-
 
 
 #%% Logistic Regression
