@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from mpl_toolkits.mplot3d import Axes3D
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.ensemble import RandomForestClassifier
@@ -72,6 +73,25 @@ ax.set_zlabel('CP')
 plt.show()
 
 
+# plot of distrubution of genders and the output in dataset
+def plot_gender_vs_output(data):
+    fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+
+    sns.histplot(data=data, x="sex", hue="output", multiple="stack", ax=ax[0], palette="coolwarm", kde=False)
+    ax[0].set_title("Gender distribution vs. Output")
+    ax[0].set_xlabel("Gender (0: Female, 1: Male)")
+    ax[0].set_ylabel("Count")
+
+    sns.histplot(data=data, x="age", hue="output", multiple="stack", ax=ax[1], palette="coolwarm", kde=False)
+    ax[1].set_title("Age distribution vs. Output")
+    ax[1].set_xlabel("Age")
+    ax[1].set_ylabel("Count")
+
+    plt.tight_layout()
+    plt.show()
+
+plot_gender_vs_output(raw_df)
+
 
 #%% PCA of scaled data to explore data:
 # Standardizing the raw data
@@ -113,67 +133,136 @@ ax3.set_title('Cumulative plot for explained variance')
 plt.tight_layout()
 plt.show()
 
+# Plot of pca components against feature importance
+def plot_pca_components(pca, X):
+    explained_variance = pca.explained_variance_ratio_
+    components = pca.components_
+
+    # Plotting the first three principal components:
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    for i in range(3):
+        ax = axes[i]
+        ax.barh(X.columns, components[i], color='cornflowerblue')
+        ax.set_title(f'Principal Component {i+1}\nVariance Explained: {explained_variance[i]:.2f}')
+        ax.set_xlabel('Feature Importance')
+
+    plt.tight_layout()
+    plt.show()
+
+plot_pca_components(pca,X)
 
 # ___________________________________________________________________________
 #%% Data Preprocessing
 
-# Feature selection with permutation
-
-
-
-
-# Splitting the data into training and testing sets (70% train, 30% test):
+# Splitting the data into training and testing sets (80% train, 20% test):
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-# Now, X_train and y_train can be used to train the model
-# X_test and y_test will be used for evaluating the model
-
-#Additionally, ‘random_state=42’ is used to ensure reproducibility of the results,
-#that is, 42 is an arbitrary number ensuring that the split is the same every time the split is performed.
 
 # ___________________________________________________________________________
 #%% Modeling
-from sklearn.model_selection import GridSearchCV
 
-# PCA with n=3:
-pca2 = PCA(n_components=3)
+# PCA to pre-process the data
+pca = PCA(n_components=6)
+X_train_pca = pca.fit_transform(X_train)
+X_test_pca = pca.transform(X_test)
 
-# Apply PCA to the training and test data
-X_train_pca = pca2.fit_transform(X_train)
-X_test_pca = pca2.transform(X_test)
+#%%
+# Random Forest
+forest = RandomForestClassifier(random_state=42)
 
-#%% Random Forest
-forest = RandomForestClassifier()
-
-# Optimise the number of trees using GridSearchCV
+# Grid search for finding the best parameteres
 rf_params = {
-    'n_estimators': [100,200, 500, 700] # The number of trees in the Random Forest
+    'n_estimators': [100, 300, 700],  # Number of trees
+    'max_depth': [10, 20, 30],             # Maximum depth of each tree
+    'min_samples_split': [2, 5, 10],       # Minimum samples required to split a node
+    'min_samples_leaf': [1, 2, 4],         # Minimum samples required at each leaf node
+    'max_features': ['sqrt', 'log2']       # Number of features to consider at each split
 }
 
-gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5)
-gs_random.fit(X_train_pca, y_train)
+gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
+gs_random.fit(X_train, y_train)
+# Printing the best parameters and score
+#print('Best Random Forest parameters:', gs_random.best_params_)
+#print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
 
-print('Random Forest parameters:')
-print(gs_random.best_params_)
-print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
-
-# Fitting with the best parameters:
-forest = RandomForestClassifier(**gs_random.best_params_, random_state=1)
-forest.fit(X_train_pca, y_train)
+# Fitting the Random Forest model with the best parameters
+forest2 = RandomForestClassifier(max_depth=20, max_features='sqrt', min_samples_leaf=4, min_samples_split=2, n_estimators=100, random_state=42)
+forest2.fit(X_train_pca, y_train)
 
 # Prediction
-y_pred_RF = forest.predict(X_test_pca)
+y_pred_RF = forest2.predict(X_test_pca)
+
+# Evaluate the performance of model
+train_accuracy = forest2.score(X_train_pca, y_train)
+test_accuracy = forest2.score(X_test_pca, y_test)
+
+print(f'Training data accuracy: {train_accuracy:.2f}')
+print(f'Test data accuracy: {test_accuracy:.2f}')
+
+# Confusion matrix
+cm = confusion_matrix(y_test, y_pred_RF)
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False,
+            xticklabels=['Predicted 0', 'Predicted 1'],
+            yticklabels=['Actual 0', 'Actual 1'])
+
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
 
 
-# Metrics:
-# Number of misclassified samples
-print('Misclassified samples: {0}'.format((y_test != y_pred_RF).sum()))
 
-# Print the accuracy computed from predictions on the training set
-print('Training data accuracy: {0:.2f}'.format(forest.score(X_train_pca, y_train)))
+#%% SVM
 
-# Print the accuracy computed from predictions on the test set
-print('Test data accuracy: {0:.2f}'.format(forest.score(X_test_pca, y_test)))
 
-# Without PCA: Training 1.00, test 0.81.
-# With PCA: Training 1.00, test 0.8
+
+
+
+
+
+
+
+
+
+
+#%% Logistic Regression
+
+
+
+
+
+
+
+
+
+
+#%% kNN
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%% Comparison
+
+
+
+
+
+
+
+
+
+
+
+
+
+
