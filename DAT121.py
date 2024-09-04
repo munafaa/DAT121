@@ -186,6 +186,7 @@ rf_params = {
 
 gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
 gs_random.fit(X_train, y_train)
+
 # Printing the best parameters and score
 #print('Best Random Forest parameters:', gs_random.best_params_)
 #print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
@@ -307,14 +308,86 @@ print(classification_report(y_test, y_pred))
 
 
 #%% Logistic Regression
+# Initialize and train the Logistic Regression model
+log_reg = LogisticRegression()
+log_reg.fit(X_train_pca, y_train)
+
+# Predict the test set results
+y_pred = log_reg.predict(X_test_pca)
+accuracy1 = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy1:.2f}")
 
 
+#%% Tuning Logistic regression model
+
+#
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
 
 
+def gradient(X, y, beta, lambda_):
+    m = X.shape[0]
+    predictions = sigmoid(X @ beta)
+    error = predictions - y
+    grad = (X.T @ error) / m + lambda_ * beta
+    return grad
 
 
+def hessian(X, beta, lambda_):
+    m = X.shape[0]
+    predictions = sigmoid(X @ beta)
+    diag_elements = predictions * (1 - predictions)
+    H = (X.T @ (diag_elements[:, np.newaxis] * X)) / m + lambda_ * np.eye(X.shape[1])
+    return H
 
 
+def newton_raphson(X, y, beta_initial, lambda_, tol=1e-6, max_iter=100):
+    beta = beta_initial
+    for _ in range(max_iter):
+        grad = gradient(X, y, beta, lambda_)
+        H = hessian(X, beta, lambda_)
+        delta_beta = np.linalg.solve(H, grad)
+        beta -= delta_beta
+
+        if np.linalg.norm(delta_beta) < tol:
+            break
+
+    return beta
+
+
+# Initialize beta coefficients
+initial_beta = np.zeros(X.shape[1])
+
+# Apply Newton-Raphson method
+lambda_ = 1  # Regularization parameter
+optimized_beta = newton_raphson(X, y, initial_beta, lambda_)
+
+
+# Predict using optimized beta
+def predict(X, beta):
+    return sigmoid(X @ beta) >= 0.5
+
+
+# Predict on test set
+y_pred_optimized = predict(X_test_pca, optimized_beta)
+
+# Calculate accuracy
+accuracy_optimized = accuracy_score(y_test, y_pred_optimized)
+print(f"Accuracy with Newton-Raphson optimization: {accuracy_optimized:.2f}")
+
+# Print optimized beta coefficients
+print("Optimized Beta Coefficients:")
+print(optimized_beta)
+
+#%% Logistic Regression with Elastic Net regularization
+
+elastic_log_reg = LogisticRegression(penalty='elasticnet', solver='saga', l1_ratio=0.5, C=1.0, max_iter=10000)
+elastic_log_reg.fit(X_train_pca, y_train)
+
+# Predict the test set results
+y_pred_elastic = elastic_log_reg.predict(X_test_pca)
+accuracy_elastic = accuracy_score(y_test, y_pred_elastic)
+print(f"Accuracy with Elastic Net: {accuracy_elastic:.2f}")
 
 
 #%% kNN
