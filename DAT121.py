@@ -60,22 +60,22 @@ heatmap = sns.heatmap(raw_df[top_corr].corr(),annot=True,cmap="coolwarm")
 # Output = 0 means lesser chance of heartattack, colored blue.
 # Output = 1 means higher chance for heart attack, colored red.
 
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(111, projection='3d')
-x = raw_df['sex']
-y = raw_df['age']
-z = raw_df['cp']
-c = raw_df['output']
+#fig = plt.figure(figsize=(12, 8))
+#ax = fig.add_subplot(111, projection='3d')
+#x = raw_df['sex']
+#y = raw_df['age']
+#z = raw_df['cp']
+#c = raw_df['output']
 
 # Defining colors of the dots
-colors = np.where(c == 0, 'blue', 'red')
+#colors = np.where(c == 0, 'blue', 'red')
 
 # Scatter plot with color based on 'output'
-ax.scatter(x, y, z, c=colors)
-ax.set_xlabel('Sex')
-ax.set_ylabel('Age')
-ax.set_zlabel('CP')
-plt.show()
+#ax.scatter(x, y, z, c=colors)
+#ax.set_xlabel('Sex')
+#ax.set_ylabel('Age')
+#ax.set_zlabel('CP')
+#plt.show()
 
 
 # plot of distrubution of genders and the output in dataset
