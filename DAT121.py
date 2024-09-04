@@ -320,7 +320,6 @@ print(f"Accuracy: {accuracy1:.2f}")
 
 #%% Tuning Logistic regression model
 
-#
 def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
