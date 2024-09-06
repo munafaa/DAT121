@@ -1,6 +1,6 @@
 # DAT121
 Project
-This is a Heart Disease dataset classification project done in DAT121 at NMBU by
+This is a Heart Disease dataset classification project in the course DAT121 at NMBU by students at MSc Data Science:
 - Ingebrigt, Muna, Maria, Domantas, Abdirahman
 
 Content:
