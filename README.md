@@ -8,7 +8,6 @@ Content:
   - A report(LaTeX)
   - A Jupyter Notebook (.ipynb)
 
-Note:
 Code files can be downloaded and edited free of charge.
 
 To run the (.py)-code you will need:
