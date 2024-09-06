@@ -4,9 +4,10 @@ This is a Heart Disease dataset classification project in the course DAT121 at N
 - Ingebrigt, Muna, Maria, Domantas, Abdirahman
 
 Content:
-  - A python datafile (.py) 
-  - A report(LaTeX)
-  - A Jupyter Notebook (.ipynb)
+  - A python datafile (DAT121.py) 
+  - A report(Heart Disease Project.pdf)
+  - A Jupyter Notebook (DAT121.ipynb)
+  - A dataset (heart.csv)
 
 Code files can be downloaded and edited free of charge.
 
