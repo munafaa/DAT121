@@ -9,7 +9,7 @@ Content:
   - A Jupyter Notebook (DAT121.ipynb)
   - A dataset (heart.csv)
 
-Code files can be downloaded and edited free of charge.
+Code files can be downloaded and used for your own purposes free of charge.
 
 To run the (.py)-code you will need:
 - A Windows/Mac/Linux/Ubuntu Unix-compatible operating system
