@@ -2,12 +2,14 @@
 Project
 This is a Heart Disease dataset classification project done in DAT121 at NMBU by
 - Ingebrigt, Muna, Maria, Domantas, Abdirahman
-  - Contains a python datafile (.py) 
+
+Content:
+  - A python datafile (.py) 
   - A report(LaTeX)
   - A Jupyter Notebook (.ipynb)
 
 Note:
-Files can be downloaded and edited and will yield the same results as presented in the report free of charge.
+Code files can be downloaded and edited free of charge.
 
 To run the (.py)-code you will need:
 - A Windows/Mac/Linux/Ubuntu Unix-compatible operating system
