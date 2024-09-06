@@ -27,8 +27,7 @@ from sklearn.linear_model import LogisticRegression
 import numpy as np
 from scipy.special import expit
 
-#%% ___________________________________________________________________________
-# Loading dataset
+#%% Loading dataset
 data = pd.read_csv('heart.csv', low_memory=False)
 
 # copy of data
@@ -38,7 +37,6 @@ raw_df = data.copy()
 X = raw_df.drop(columns=[raw_df.columns[-1]])
 y = raw_df[raw_df.columns[-1]]
 
-# ___________________________________________________________________________
 #%% Raw data exploration
 
 # Descriptive statistics
@@ -68,22 +66,22 @@ heatmap = sns.heatmap(raw_df[top_corr].corr(),annot=True,cmap="coolwarm")
 # Output = 0 means lesser chance of heartattack, colored blue.
 # Output = 1 means higher chance for heart attack, colored red.
 
-#fig = plt.figure(figsize=(12, 8))
-#ax = fig.add_subplot(111, projection='3d')
-#x = raw_df['sex']
-#y = raw_df['age']
-#z = raw_df['cp']
-#c = raw_df['output']
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
+x = raw_df['sex']
+y2 = raw_df['age']
+z = raw_df['cp']
+c = raw_df['output']
 
 # Defining colors of the dots
-#colors = np.where(c == 0, 'blue', 'red')
+colors = np.where(c == 0, 'blue', 'red')
 
 # Scatter plot with color based on 'output'
-#ax.scatter(x, y, z, c=colors)
-#ax.set_xlabel('Sex')
-#ax.set_ylabel('Age')
-#ax.set_zlabel('CP')
-#plt.show()
+ax.scatter(x, y2, z, c=colors)
+ax.set_xlabel('Sex')
+ax.set_ylabel('Age')
+ax.set_zlabel('CP')
+plt.show()
 
 
 # plot of distrubution of genders and the output in dataset
@@ -167,7 +165,7 @@ def plot_pca_components(pca, X_scaled):
     plt.show()
 
 plot_pca_components(pca,X_scaled)
-# ___________________________________________________________________________
+
 #%% Data Preprocessing
 
 # Splitting the data into training and testing sets (80% train, 20% test):
@@ -179,7 +177,7 @@ pca = PCA(n_components=n_components)
 X_train_pca = pca.fit_transform(X_train)
 X_test_pca = pca.transform(X_test)
 
-# ___________________________________________________________________________
+
 #%% Modeling
 
 # Random Forest
@@ -196,10 +194,6 @@ rf_params = {
 
 gs_random = GridSearchCV(estimator=forest, param_grid=rf_params, cv=5, n_jobs=-1, verbose=2)
 gs_random.fit(X_train_pca, y_train)
-
-# Printing the best parameters and score
-#print('Best Random Forest parameters:', gs_random.best_params_)
-#print('Best score from grid search: {0:.2f}'.format(gs_random.best_score_))
 
 # Fitting the Random Forest model with the best parameters
 forest2 = RandomForestClassifier(max_depth=20, max_features='sqrt', min_samples_leaf=4, min_samples_split=2, n_estimators=100, random_state=42)
@@ -237,7 +231,7 @@ pcaDF_train = pd.DataFrame(data=X_train_pca, columns=[f'PC{i+1}' for i in range(
 # Creating a dataframe with selected PCs for the test data
 pcaDF_test = pd.DataFrame(data=X_test_pca, columns=[f'PC{i+1}' for i in range(n_components)])
 
-#Initialize the SVM model with an RBF kernelon PCA transformed trainign data (you can choose other kernels like linear and poly but given data nature here we are using RBF)
+#Initialize the SVM model with an RBF kernelon PCA transformed trainign data
 svmModel = SVC(kernel='rbf', probability=True, random_state=42)
 svmModel.fit(pcaDF_train, y_train)
 
@@ -450,8 +444,7 @@ print(
     f"Highest accuracy of Test-set with PCA: {max(accuracies_test_pca)}, with k value of :{k[accuracies_test_pca.index(max(accuracies_test_pca))]}")
 
 
-#%% Tuning kNN for the most optimal scores possible
-
+#%% Plot showing the most optimal parameteres
 test_sizes = np.arange(0.1, 0.6, 0.05)
 k_values = np.arange(1, 40, 1)
 
@@ -486,7 +479,7 @@ print(f"Accuracy score for Train-set: {np.round(accuracy_train,3)}")
 
 precision = precision_score(y_test, t_pred, average='weighted')
 recall = recall_score(y_test, t_pred, average='weighted')
-f1 = f1_score(y_test, y_pred, average='weighted')
+f1 = f1_score(y_test, t_pred, average='weighted')
 
 print(f"Precision: {np.round(precision,3)}")
 print(f"Recall: {np.round(recall,3)}")
