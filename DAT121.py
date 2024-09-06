@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Sep  6 12:22:08 2024
+
+@author: chels
+"""
+
 #%%  ___________________________________________________________________________
 # Imports
 import pandas as pd
@@ -100,18 +107,21 @@ plot_gender_vs_output(raw_df)
 
 
 #%% PCA of scaled data to explore data:
-# Standardizing the raw data
-X =(X - X.mean()) / X.std()
+# Standardizing the raw data using StandardScaler
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
 # Performing PCA and fitting on data
 pca = PCA(n_components=13)
-pca.fit(X)
+pca.fit(X_scaled)
 
 loadings = pd.DataFrame(pca.components_.T,
 columns=['PC%s' % _ for _ in range(len(X.columns))],
 index=X.columns)
 
-# Plot of prinipal components and explained variance
+# Plot of principal components and explained variance
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(18, 6))
 ax1.grid(True)
 ax1.plot(pca.explained_variance_ratio_, marker='o')
@@ -141,7 +151,7 @@ plt.show()
 
 #%%
 # Plot of pca components against feature importance
-def plot_pca_components(pca, X):
+def plot_pca_components(pca, X_scaled):
     explained_variance = pca.explained_variance_ratio_
     components = pca.components_
 
@@ -156,13 +166,12 @@ def plot_pca_components(pca, X):
     plt.tight_layout()
     plt.show()
 
-plot_pca_components(pca,X)
-
+plot_pca_components(pca,X_scaled)
 # ___________________________________________________________________________
 #%% Data Preprocessing
 
 # Splitting the data into training and testing sets (80% train, 20% test):
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
 n_components = 6
 # PCA to pre-process the data
@@ -172,7 +181,6 @@ X_test_pca = pca.transform(X_test)
 
 # ___________________________________________________________________________
 #%% Modeling
-
 
 # Random Forest
 forest = RandomForestClassifier(random_state=42)
