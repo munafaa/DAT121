@@ -17,3 +17,5 @@ To run the (.ipynb)-code you will need:
 - Jupyter Notebook installed on your computer
 - It is recommended to install Anaconda or Miniconda prior to this. 
 
+Dataset can be accessed from:
+https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset/data
